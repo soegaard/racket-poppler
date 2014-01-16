@@ -1,5 +1,5 @@
 #lang racket
-(require pdf-render pict)
+(require racket-poppler pict)
 
 ; document-info : d -> assoc-list
 (define (document-info d)
