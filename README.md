@@ -17,7 +17,7 @@ Example:
     > (define p (latex->pict "$\\sqrt{x^2+y^2}$"))
     > p
 
-![nice picture in DrRacket](http://imgur.com/HiHFAQ1) 
+![nice picture in DrRacket](http://i.imgur.com/HiHFAQ1.png)
 
 Now let's do something with the picture:
 
