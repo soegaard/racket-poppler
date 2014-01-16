@@ -5,7 +5,8 @@ Racket bindings for Poppler (library for reading and generating pdfs)
 
 The library was tested on OS X using a version of libpoppler compiled
 with the same version of Cairo as DrRacket uses. Do *not* expect other
-versions of libpoppler to work.
+versions of libpoppler to work. See https://github.com/soegaard/racket-osx-libs
+for binaries.
 
 The library is based on code by Michael Wilber (https://github.com/gcr/pdf-render).
 
