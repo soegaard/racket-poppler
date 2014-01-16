@@ -13,7 +13,8 @@ The library is based on code by Michael Wilber (https://github.com/gcr/pdf-rende
 Example:
     > (require racket-poppler/render-tex)
     > (pict->bitmap (rotate (latex->pict "$\\sqrt{c^2=a^2+b^2}$") 3.1415))
-    <a rotated formula is shown in DrRacket>
+    ![nice pictur in DrRacket](https://github.com/soegaard/racket-poppler/blob/master/result-of-test-render-tex.png)
+
 
 This renders the formula of Pythagoras as a pdf, converts it into 
 a pict, which is then rotated. The rotated pict is converted into
