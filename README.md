@@ -13,10 +13,18 @@ The library is based on code by Michael Wilber (https://github.com/gcr/pdf-rende
 Example:
 
     > (require racket-poppler/render-tex)
+    > (latex-path "/usr/local/texlive/2013/bin/universal-darwin/pdflatex")
+    > (define p (latex->pict "$\\sqrt{x^2+y^2}$"))
 
-    > (pict->bitmap (rotate (latex->pict "$\\sqrt{c^2=a^2+b^2}$") 3.1415))
+Now let's do something with the picture:
 
-![nice pictur in DrRacket](http://i.imgur.com/LT9j8cl.png)
+    > (define beside hc-append)
+    > (define above  vc-append)
+
+    > (pict->bitmap (above (beside (rotate p (- pi (/ pi 3))) (rotate p    (/ pi 3)))
+                           (beside (rotate p (+ pi (/ pi 3))) (rotate p (- (/ pi 3))))))
+
+![nice picture in DrRacket](http://i.imgur.com/LT9j8cl.png)
 
 This renders the formula of Pythagoras as a pdf, converts it into 
 a pict, which is then rotated. The rotated pict is converted into
