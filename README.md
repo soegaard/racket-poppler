@@ -15,6 +15,9 @@ Example:
     > (require racket-poppler/render-tex)
     > (latex-path "/usr/local/texlive/2013/bin/universal-darwin/pdflatex")
     > (define p (latex->pict "$\\sqrt{x^2+y^2}$"))
+    > p
+
+![nice picture in DrRacket](http://imgur.com/HiHFAQ1) 
 
 Now let's do something with the picture:
 
