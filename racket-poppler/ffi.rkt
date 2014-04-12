@@ -19,12 +19,7 @@
 
 ;; Docs: https://developer.gnome.org/glib/2.30/glib-Doubly-Linked-Lists.html
 
-(define-ffi-definer define-poppler 
-  (ffi-lib 
-   ; "/Users/soegaard/racket-april-2014/racket/racket/lib/libpoppler-glib.8.dylib"
-   "libpoppler-glib"
-   '("8" #f)
-   ))
+(define-ffi-definer define-poppler (ffi-lib "libpoppler-glib" '("8" #f)))
 
 (define-cstruct _GList  ; double linked list links,
   ([data _pointer]      ; pointing to data
@@ -368,7 +363,7 @@
 (define (page->pict p [options 'POPPLER_PRINT_DOCUMENT])
   #;(define use-recording? #f) ; flag for debug
   (match-define (list w h) (page-size p)) ; in points
-  (define α 2.0) ; TODO: What is the correct factor here?
+  (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
   (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
   #;(define (make-recording) ; -> surface
     (define r (make-cairo_rectangle_t 0.0 0.0 width height))
