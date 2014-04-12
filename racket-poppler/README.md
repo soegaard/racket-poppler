@@ -1,14 +1,24 @@
 racket-poppler
 ==============
 
-Racket bindings for Poppler (library for reading and generating pdfs)
+Poppler is a library for reading and rendering pdf-files.
+The racket-poppler package contains bindings for poppler.
 
-The library was tested on OS X using a version of libpoppler compiled
-with the same version of Cairo as DrRacket uses. Do *not* expect other
-versions of libpoppler to work. See [1] for binaries.
-for binaries.
+This package allows you to read pdf files, render them to
+a drawing context and more.
 
-The library is based on code by Michael Wilber (https://github.com/gcr/pdf-render).
+In order for the rendering to work the Poppler library needs
+to be compiled to use the same version of Cairo as Racket uses.
+For that reason racket-poppler is distributed with Poppler 
+precompiled for Windows and OS X. Thanks to Matthew Flatt for 
+providing the binaries. The license of Poppler is GPL,
+so it can't be distributed with Racket.
+
+Note:  Use the development version of Racket - which uses a newer
+       version of Cairo than the current release.
+
+The racket-poppler package is based on code by Michael Wilber 
+(https://github.com/gcr/pdf-render).
 
 Example:
 
