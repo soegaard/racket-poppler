@@ -1,8 +1,5 @@
 #lang setup/infotab
 
-(define collection 'multi)
-(define deps '("base"))
+(define install-platform "i386-macosx")
 
-(define pkg-desc "native libraries for \"poppler\" package")
-
-(define pkg-authors '(mflatt))
+(define copy-foreign-libs '("libpoppler-glib.8.dylib" "libpoppler.44.dylib"))
