@@ -61,8 +61,8 @@ p
    ([bounding-box (in-list (page-find-text p "the"))])
    (match-define (list x1 y1 x2 y2) bounding-box)
    ;; Each match's bounding box ^
-   (frame (pin-under pageview x1 y1
-                     (cellophane (colorize (filled-rectangle (- x2 x1) (- y2 y1)) "yellow") 0.5)))))
+   (pin-under pageview x1 y1
+              (cellophane (colorize (filled-rectangle (- x2 x1) (- y2 y1)) "yellow") 0.5))))
 
 ;(define the-layout (page-text-layout p))
 ;(define the-text (page-text p))

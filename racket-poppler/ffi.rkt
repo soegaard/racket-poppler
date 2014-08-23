@@ -361,6 +361,25 @@
            default)))))
 
 (define (page->pict p [options 'POPPLER_PRINT_DOCUMENT])
+  (match-define (list w h) (page-size p)) ; in points
+  (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
+  (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
+  (dc 
+   (λ(dc x y)
+     (define tr (send dc get-transformation))
+     (send dc translate x y)
+     (when (is-a? dc bitmap-dc%)
+       (define bm (send dc get-bitmap))
+       (send dc in-cairo-context
+             (λ (target-cr)
+               (cairo_save target-cr)
+               (cairo_scale target-cr α α)
+               (page-render-for-printing-with-options-to-cairo! p target-cr options)
+               (cairo_restore target-cr))))
+     (send dc set-transformation tr))
+   width height))
+
+#;(define (page->pict p [options 'POPPLER_PRINT_DOCUMENT])
   #;(define use-recording? #f) ; flag for debug
   (match-define (list w h) (page-size p)) ; in points
   (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
