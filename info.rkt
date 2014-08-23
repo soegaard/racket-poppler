@@ -6,3 +6,4 @@
 (define build-deps '("at-exp-lib" "rackunit-lib" "scribble-lib"
                      "racket-doc" "draw-doc" "pict-doc"))
 
+(define copy-shared-files (list "poppler-libs"))
