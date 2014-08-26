@@ -6,11 +6,15 @@
 (latex-debug? #t)  ; #t turns on useful debug information
 ; turn this on to see paths and errors.
 
-; the location of pdflatex on OS X with TeXLive installed
-(latex-path "/usr/local/texlive/2013/bin/universal-darwin/pdflatex") 
+; the location of pdflatex where TeXLive installed it
+(latex-path 
+ (case (system-type)
+   [(macosx) "/usr/local/texlive/2013/bin/universal-darwin/pdflatex"]
+   [(unix)   "pdflatex"] 
+   [(windows) "c:/texlive/2014/bin/win32/pdflatex.exe"]))
 
 ; make a Racket pict from a piece of TeX
-(define p (latex->pict "$\\sqrt{x^2+y^2}$"))
+(define p (latex->pict "$\\sqrt{x^2+y^2+z}$"))
 
 (pict->bitmap p)
 
