@@ -1,5 +1,6 @@
 #lang racket
-(require ffi/unsafe
+(require "libs.rkt"
+         ffi/unsafe
          ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/atomic
@@ -13,13 +14,47 @@
 
 (provide (all-defined-out))
 
+(define-runtime-lib poppler-lib
+  [(unix) 
+   (ffi-lib "libpopler-glib" '("8" ""))]
+  [(macosx)
+   ; order these to dependencies are loaded first
+   (ffi-lib "libz.1.dylib")
+   (ffi-lib "libintl.8.dylib")
+   (ffi-lib "libpng16.16.dylib")
+   (ffi-lib "libexpat.1.dylib")
+   (ffi-lib "libfreetype.6.dylib")
+   (ffi-lib "libfontconfig.1.dylib")
+   (ffi-lib "libpixman-1.0.dylib")
+   (ffi-lib "libcairo.2.dylib")
+   (ffi-lib "libjpeg.9.dylib")
+   (ffi-lib "libpoppler.44.dylib")
+   (ffi-lib "libgio-2.0.0.dylib")
+   (ffi-lib "libpoppler-glib.8.dylib")]
+  [(windows)
+   ; order these to dependencies are loaded first
+   (ffi-lib "zlib1.dll")
+   (ffi-lib "libintl-8.dll")
+   (ffi-lib "libpng16-16.dll")
+   (ffi-lib "libexpat-1.dll")
+   (ffi-lib "libfreetype-6.dll")
+   (ffi-lib "libfontconfig-1.dll")
+   (ffi-lib "libpixman-1-0.dll")
+   (ffi-lib "libcairo-2.dll")
+   (ffi-lib "libpoppler-44.dll")
+   (ffi-lib "libgio-2.0-0.dll")
+   (ffi-lib "libpoppler-glib-8.dll")])
+
+(define-ffi-definer define-poppler poppler-lib)
+
+
 ;;;
 ;;; GLib Double Linked Lists
 ;;;
 
 ;; Docs: https://developer.gnome.org/glib/2.30/glib-Doubly-Linked-Lists.html
 
-(define-ffi-definer define-poppler (ffi-lib "libpoppler-glib" '("8" #f)))
+
 
 (define-cstruct _GList  ; double linked list links,
   ([data _pointer]      ; pointing to data
@@ -380,60 +415,60 @@
    width height))
 
 #;(define (page->pict p [options 'POPPLER_PRINT_DOCUMENT])
-  #;(define use-recording? #f) ; flag for debug
-  (match-define (list w h) (page-size p)) ; in points
-  (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
-  (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
-  #;(define (make-recording) ; -> surface
-    (define r (make-cairo_rectangle_t 0.0 0.0 width height))
-    (define recorded-surface (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA r)) ; unbounded
-    (define recorded-cairo (cairo_create recorded-surface))
-    (cairo_save recorded-cairo)
-    (cairo_scale recorded-cairo α α)
-    (page-render-for-printing-with-options-to-cairo! p recorded-cairo options)
-    (cairo_restore recorded-cairo)
-    recorded-surface)
-  #;(define recorded-surface (and use-recording? (make-recording)))
-  (dc 
-   (λ(dc x y)
-     #;(displayln (~a "redrawing at " x "," y))
-     (define tr (send dc get-transformation))
-     (send dc translate x y)
-     #;(displayln (list 'bitmap-dc? (is-a? dc bitmap-dc%) width height dc))
-     (when (is-a? dc bitmap-dc%)
-       (define bm (send dc get-bitmap))
-       (send dc in-cairo-context
-             (λ (target-cr)
-               (cairo_save target-cr)
-               (cairo_scale target-cr α α)
-               (cond 
-                 #;[use-recording?
-                  (cairo_set_operator target-cr CAIRO_OPERATOR_DEST_OVER)
-                  (cairo_set_source_surface target-cr recorded-surface 0 0)
-                  (cairo_paint target-cr)]
-                 [else
-                  (page-render-for-printing-with-options-to-cairo! p target-cr options)])
-               (cairo_restore target-cr))))
-     #;(when (is-a? dc record-dc%)
-       ; a record-dc% always uses a recorded surface
-       (unless recorded-surface
-         (set! recorded-surface (make-recording)))
-       (send dc record-cairo
-             (λ (target-cr)
-               (displayln "pict receiving cr for surface to draw on")
-               (cairo_save target-cr)
-               (cairo_set_operator target-cr CAIRO_OPERATOR_DEST_OVER)
-               (cairo_set_source_surface target-cr recorded-surface 0 0)
-               (cairo_paint target-cr)
-               (cairo_restore target-cr)
-               
-               ;(cairo_set_line_width target-cr 1.0)
-               ;(cairo_set_source_rgb target-cr 1.0 0.0 0.5)
-               ;(cairo_move_to target-cr 0.0 0.0)
-               ;(cairo_line_to target-cr 10.0 10.0)
-               ; (cairo_stroke target-cr)
-               ; (page-render-for-printing-with-options-to-cairo! p target-cr options)
-               ; (cairo_restore target-cr)
-               )))
-     (send dc set-transformation tr))
-   width height))
+    #;(define use-recording? #f) ; flag for debug
+    (match-define (list w h) (page-size p)) ; in points
+    (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
+    (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
+    #;(define (make-recording) ; -> surface
+        (define r (make-cairo_rectangle_t 0.0 0.0 width height))
+        (define recorded-surface (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA r)) ; unbounded
+        (define recorded-cairo (cairo_create recorded-surface))
+        (cairo_save recorded-cairo)
+        (cairo_scale recorded-cairo α α)
+        (page-render-for-printing-with-options-to-cairo! p recorded-cairo options)
+        (cairo_restore recorded-cairo)
+        recorded-surface)
+    #;(define recorded-surface (and use-recording? (make-recording)))
+    (dc 
+     (λ(dc x y)
+       #;(displayln (~a "redrawing at " x "," y))
+       (define tr (send dc get-transformation))
+       (send dc translate x y)
+       #;(displayln (list 'bitmap-dc? (is-a? dc bitmap-dc%) width height dc))
+       (when (is-a? dc bitmap-dc%)
+         (define bm (send dc get-bitmap))
+         (send dc in-cairo-context
+               (λ (target-cr)
+                 (cairo_save target-cr)
+                 (cairo_scale target-cr α α)
+                 (cond 
+                   #;[use-recording?
+                      (cairo_set_operator target-cr CAIRO_OPERATOR_DEST_OVER)
+                      (cairo_set_source_surface target-cr recorded-surface 0 0)
+                      (cairo_paint target-cr)]
+                   [else
+                    (page-render-for-printing-with-options-to-cairo! p target-cr options)])
+                 (cairo_restore target-cr))))
+       #;(when (is-a? dc record-dc%)
+           ; a record-dc% always uses a recorded surface
+           (unless recorded-surface
+             (set! recorded-surface (make-recording)))
+           (send dc record-cairo
+                 (λ (target-cr)
+                   (displayln "pict receiving cr for surface to draw on")
+                   (cairo_save target-cr)
+                   (cairo_set_operator target-cr CAIRO_OPERATOR_DEST_OVER)
+                   (cairo_set_source_surface target-cr recorded-surface 0 0)
+                   (cairo_paint target-cr)
+                   (cairo_restore target-cr)
+                   
+                   ;(cairo_set_line_width target-cr 1.0)
+                   ;(cairo_set_source_rgb target-cr 1.0 0.0 0.5)
+                   ;(cairo_move_to target-cr 0.0 0.0)
+                   ;(cairo_line_to target-cr 10.0 10.0)
+                   ; (cairo_stroke target-cr)
+                   ; (page-render-for-printing-with-options-to-cairo! p target-cr options)
+                   ; (cairo_restore target-cr)
+                   )))
+       (send dc set-transformation tr))
+     width height))
