@@ -96,6 +96,8 @@
 ; g_list_nth_data returns a pointer to the nth element
 (define-glib g_list_nth_data (_fun _GList* _uint -> _pointer))
 
+(define-glib g_filename_to_uri (_fun _string _string #f -> _string))
+
 ;;;
 ;;; Poppler Documents
 ;;;
@@ -130,7 +132,7 @@
                       [(relative-path? p) (path->complete-path p)]
                       [(string? p)        (open-pdf (string->path p) password)]
                       [else               (error 'open-pdf "internal error")])])
-         (define pointer (unsafe-pdf-from-file (~a "file://" (path->string p)) password))
+         (define pointer (unsafe-pdf-from-file (g_filename_to_uri (path->string p) #f #f) password))
          (cond [pointer => pdf] [else #f]))))
 
 ; pdf-count-pages : document -> integer
