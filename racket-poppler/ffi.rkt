@@ -397,22 +397,23 @@
             (lambda () (release-cr cr)))
            default)))))
 
-(define (page->pict p [options 'POPPLER_PRINT_DOCUMENT])
+(define (page->pict p [α 1.0] [options 'POPPLER_PRINT_DOCUMENT])
   (match-define (list w h) (page-size p)) ; in points
-  (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
+  ; (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
   (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
   (dc 
    (λ(dc x y)
      (define tr (send dc get-transformation))
      (send dc translate x y)
-     (when (is-a? dc bitmap-dc%)
+     (when (or (is-a? dc bitmap-dc%)
+               (is-a? dc svg-dc%))
        (define bm (send dc get-bitmap))
        (send dc in-cairo-context
              (λ (target-cr)
                (cairo_save target-cr)
                (cairo_scale target-cr α α)
                (page-render-for-printing-with-options-to-cairo! p target-cr options)
-               (cairo_restore target-cr))))
+               (cairo_restore target-cr))))     
      (send dc set-transformation tr))
    width height))
 
