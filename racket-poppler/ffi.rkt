@@ -16,7 +16,7 @@
 
 (define-runtime-lib poppler-lib
   [(unix) 
-   (ffi-lib "libpopler-glib" '("8" ""))]
+   (ffi-lib "libpoppler-glib" '("8" ""))]
   [(macosx)
    ; order these to dependencies are loaded first
    (ffi-lib "libz.1.dylib")
