@@ -134,6 +134,7 @@
 ;; latex->latex-doc : string? -> string?
 (define (latex->latex-doc latex-str)
   (string-append "\\documentclass[tightpage]{standalone}\n"
+                 "\\usepackage[active,tightpage,pdftex]{preview}\n"
                  "\\usepackage{amsmath}\n"
                  ; "\\pagestyle{empty}\n" 
                  (~a (latex-preamble) "\n")
