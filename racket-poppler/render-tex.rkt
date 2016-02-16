@@ -40,7 +40,12 @@
 ;; Spam the console with debugging info?
 (define latex-debug? (make-parameter #f)) ; todo : set to #f
 
-(define (find-executable name [defaultdir "/usr/bin"])
+(define (find-executable name [defaultdir #f])
+  (set! defaultdir
+        (or defaultdir
+            (case (system-type)
+              [(macosx) "/Library/TeX/texbin"]
+              [else     "/usr/bin"])))
   (cond [(find-executable-path name) => (λ (p) p)]
         [(find-executable-path (string-append name ".exe")) => (λ (p) p)]
         [else  (build-path defaultdir name)]))
@@ -133,9 +138,19 @@
 
 ;; latex->latex-doc : string? -> string?
 (define (latex->latex-doc latex-str)
-  (string-append "\\documentclass[tightpage]{standalone}\n"
-                 "\\usepackage[active,tightpage,pdftex]{preview}\n"
-                 "\\usepackage{amsmath}\n"
+  (string-append "\\documentclass[preview]{standalone}\n"
+                 ;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
+                 ;; Note (16-feb-2016):
+                 ;;   The above line does not work for be in TeXLive 2015 (OS X).
+                 ;;   The pdftex option to the preview package were meant
+                 ;;   to affect tightpage (according to documentation of preview)
+                 ;; ---
+                 ;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
+                 ;; This means use the "preview" packages with the options:
+                 ;;    active    - actually use preview (otherwise preview is ignored)
+                 ;;    tightpage - option is to be used with the option pdftex
+                 ;;    pdftex    - assume PDFTeX is the output driver (affects tightpage)
+                 "\\usepackage{amsmath}\n"   ; make amsmath available in math
                  ; "\\pagestyle{empty}\n" 
                  (~a (latex-preamble) "\n")
                  "\\begin{document}\n"
@@ -186,7 +201,10 @@
     [(local-name)  #'(setup-local-cache #'local-name)]))
 
 ; Example path (OS X using TeXLive)
-; (latex-path "/usr/local/texlive/2013/bin/universal-darwin/pdflatex") 
-
-; > (pict->bitmap (rotate (latex->pict "$\\sqrt{x^2+y^2}$")  (/ 3.1415 3)))
-
+; (latex-path "/usr/local/texlive/2013/bin/universal-darwin/pdflatex")
+; (latex-debug? #t)
+; (cache-path)
+; (latex-path "/Library/TeX/texbin/pdflatex")
+; (pict->bitmap (scale (latex->pict "Foobar") 8))
+; (pict->bitmap (scale (latex->pict "$\\sqrt{x^2+y^2 }$") 8))
+; (pict->bitmap (rotate (latex->pict "$\\sqrt{x^2+y^2 }$")  (/ 3.1415 3)))
