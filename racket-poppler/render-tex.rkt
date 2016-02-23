@@ -44,7 +44,10 @@
   (set! defaultdir
         (or defaultdir
             (case (system-type)
-              [(macosx) "/Library/TeX/texbin"]
+              [(macosx) (case (string->number (substring (with-output-to-string
+                 (lambda () (system "sw_vers -productVersion"))) 3 5))
+                          [(10 9 8 7 6 5) "/usr/texbin"]
+                          [(11) "/Library/TeX/texbin"])]
               [else     "/usr/bin"])))
   (cond [(find-executable-path name) => (λ (p) p)]
         [(find-executable-path (string-append name ".exe")) => (λ (p) p)]
