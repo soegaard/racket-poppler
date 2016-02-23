@@ -44,7 +44,7 @@
   (set! defaultdir
         (or defaultdir
             (case (system-type)
-              [(macosx) "/Library/TeX/texbin"]
+              [(macosx) "/usr/texbin"]
               [else     "/usr/bin"])))
   (cond [(find-executable-path name) => (λ (p) p)]
         [(find-executable-path (string-append name ".exe")) => (λ (p) p)]
