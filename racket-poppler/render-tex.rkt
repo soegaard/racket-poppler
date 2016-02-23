@@ -44,15 +44,15 @@
   (set! defaultdir
         (or defaultdir
             (case (system-type)
-              [(macosx) "/Library/TeX/texbin"]
+              [(macosx) "/usr/texbin"]
               [else     "/usr/bin"])))
   (cond [(find-executable-path name) => (λ (p) p)]
         [(find-executable-path (string-append name ".exe")) => (λ (p) p)]
         [else  (build-path defaultdir name)]))
 
 ;; Default paths
-(define latex-path (make-parameter (find-executable "latex" "/usr/bin")))
-(define dvipng-path (make-parameter (find-executable "dvipng" "/usr/bin")))
+(define latex-path (make-parameter (find-executable "latex")))
+(define dvipng-path (make-parameter (find-executable "dvipng")))
 (define cache-path (make-parameter (find-system-path 'temp-dir)))
 
 ;; Exceptions raised
