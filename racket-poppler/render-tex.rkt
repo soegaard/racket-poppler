@@ -9,6 +9,13 @@
 
 ;; Goal: Be compatible with Neil&Jay's slideshow-latex
 
+;; Debug tip:
+;;   Open latest pdf with:
+;;      ls -t *pdf | head -n1 | xargs open
+;;   See latex log with:
+;;      (latex-debug? #t)
+
+
 (require (for-syntax racket/base)
          racket/system 
          racket/string
@@ -51,7 +58,7 @@
         [else  (build-path defaultdir name)]))
 
 ;; Default paths
-(define latex-path (make-parameter (find-executable "latex")))
+(define latex-path (make-parameter (find-executable  "pdflatex")))
 (define dvipng-path (make-parameter (find-executable "dvipng")))
 (define cache-path (make-parameter (find-system-path 'temp-dir)))
 
@@ -137,9 +144,9 @@
   (hash-set! used-files pdf-file #t))
 
 ;; latex->latex-doc : string? -> string?
-(define (latex->latex-doc latex-str)
-  (string-append "\\documentclass[preview]{standalone}\n"
-                 ;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
+(define (latex->latex-doc latex-str #:preamble [preamble (or (latex-preamble) "")])
+  (string-append "\\documentclass{article}\n"
+                 "\\usepackage[active,tightpage,textmath,pdftex]{preview}\n"
                  ;; Note (16-feb-2016):
                  ;;   The above line does not work for be in TeXLive 2015 (OS X).
                  ;;   The pdftex option to the preview package were meant
@@ -152,25 +159,25 @@
                  ;;    pdftex    - assume PDFTeX is the output driver (affects tightpage)
                  "\\usepackage{amsmath}\n"   ; make amsmath available in math
                  ; "\\pagestyle{empty}\n" 
-                 (~a (latex-preamble) "\n")
+                 (~a preamble "\n")
                  "\\begin{document}\n"
                  (~a latex-str "\n")
                  "\\end{document}\n"))
 
-(define (latex->pict latex-str)
-  (define doc-str (latex->latex-doc latex-str))
+(define (latex->pict latex-str #:preamble [preamble (or (latex-preamble) "")])
+  (define doc-str (latex->latex-doc latex-str #:preamble preamble))
   (define file-base (latex-doc->file-base doc-str))
   (define pdf-file (base+ext file-base ".pdf"))  
   (hash-ref!
    cached-picts file-base
    (λ () (parameterize ([current-directory  (cache-path)])
            (ensure-pdf file-base doc-str)
-           (when (latex-debug?) (printf "INFO: loading ~a~n" pdf-file))
+           (when (latex-debug?) (printf "INFO: loading ~a~nfolder: ~a~n" pdf-file (cache-path)))
            (page->pict (pdf-page (open-pdf pdf-file) 0))))))
 
 ;; latex->bitmap : string? -> bitmap%
-(define (latex->bitmap latex-str)
-  (pict->bitmap (latex->pict latex-str)))
+(define (latex->bitmap latex-str #:preamble [preamble (or (latex-preamble) "")])
+  (pict->bitmap (latex->pict latex-str #:preamble preamble)))
 
 
 (define (set-latex-cache-path cpath)
