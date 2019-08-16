@@ -9,22 +9,52 @@
 
 ;; Goal: Be compatible with Neil&Jay's slideshow-latex
 
-;; Debug tip:
+;; Debug tips:
 ;;   Open latest pdf with:
 ;;      ls -t *pdf | head -n1 | xargs open
-;;   See latex log with:
+;;   Rerun latest latex command with:
+;;      ls -t *tex | head -n1 | xargs pdflatex
+;;   See latest latex log with:
+;;      ls -t *log | head -n1 | xargs less
+;;   Or make print the log automtically, if an error occurs:
 ;;      (latex-debug? #t)
 
+;; Note:
+;;  Computer Modern Fonts for mac:
+;;     https://apple.stackexchange.com/questions/117946/computer-modern-font-for-osx
+;;  Useful when comparing baselines between pict made by (text ...)
+;;  and a pict made by latex->pict.
+
+;; Note:
+;;  The meaning of height and depth in Tex is different from
+;;  the meaning of height in a pict. See extract-sizes-from-latex-log.
+
+;; Note:
+;;  To compare the orginal baseline in TeX with the baseline produced by
+;;  latex->pict, it can be useful to make TeX draw a baseline.
+;;    (current-preamble
+;;       @~a{
+;;          \usepackage{mathtools}
+;;          \usepackage{amssymb}
+;;          \usepackage{xcolor}
+;;          \newcommand*\drawbaseline[2][orange]
+;;          {\begingroup\sbox0{$\displaystyle#2$}\mathrlap{\color{#1}\rule{\wd0}{.1pt}}\endgroup#2}
+;;          })
+;;  One can now write \drawbaseline{...} around a part of a math formula,
+;;  to see the baseline.
+
+;; Note:
+;;  The option "lyx" is used with the package "preview" in order to see
+;;  the height, depth and width of the snippet.
+
+;; Note:
+;;   There are three different latex modes: normal text mode, math mode and display math mode.
+;;   Should there be three different converters?
 
 (require (for-syntax racket/base)
-         racket/system 
-         racket/string
-         racket/format
-         racket/port
-         racket/list
-         file/md5
-         pict
-         racket-poppler)
+         racket/system racket/string racket/format
+         racket/port racket/list file/md5 racket/match
+         pict racket-poppler)
 
 (provide latex->pict latex->bitmap
          latex-preamble add-preamble latex-debug?
@@ -32,11 +62,12 @@
          (struct-out exn:latex)
          set-latex-cache-path
          tidy-latex-cache
-         setup-local-latex-cache)
+         setup-local-latex-cache
+         last-extracted-baseline-fraction)
 
-(define used-files (make-hash))
-
+(define used-files   (make-hash))
 (define cached-picts (make-hash))
+
 
 ;; Document contents
 (define latex-preamble (make-parameter ""))
@@ -101,6 +132,47 @@
              (format "~a ~a" msg ctx))]
           [else  (loop (rest lines))])))
 
+; extract-sizes-from-latex-log : path? -> string?
+;   the "lyx" option for the "preview" package makes
+;   pdflatex write a line:
+; Preview: Snippet 1 422343 127431 663780
+;                  n height depth  width
+; giving TeX sizes height, depth and width.
+; Note that TeX used height and depth differently from picts.
+;    tex-height + tex-depth                       = tex-total-height
+;   pict-ascent + pict-middle+pict + pict-descent = pict-height
+; The text-height is therefore the placement of the baseline.
+; In order to avoid unit conversions, we calculate fraction
+;     text-height/text-total-height,
+; and multiply with pict-height to the placement of the pict baseline.
+
+; The package "preview" can be used to extract multiple snippets at a
+; time, so the number n is simply a counter used to identify which snippet
+; the size belong to.
+
+(define (extract-sizes-from-latex-log base-file)
+  (define size-regexp (regexp ".*Preview: Snippet ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+).*"))
+  ; (define test-line         "Preview: Snippet 1 422343 127431 663780")
+  (define (match->fraction m)
+    (match-define (list line counter height depth width) m)
+    (match-define (list h d w) (map string->number (list height depth width)))
+    ; above and below the actual box there is a bit of space.
+    ; the number from tightpage is added both above and below.
+    (define tp 32891) ; "Preview: Tightpage -32891 -32891 32891 32891"
+    (displayln "Extract: ")
+    (displayln (~a 'h: h 'd: d 'w: w))
+    ;(displayln (list h d w))  ; xxx
+    (if (< (+ h d) 0.1)
+        0.5                 ; the fallback is baseline at the middle
+        (min 1 (max 0 (/ (+ tp h)               ; position of baseline
+                         (+ h d (* 2 tp)))))))  ; total height
+
+  (with-input-from-file (base+ext base-file ".log")
+    (λ ()
+      (for/or ([line (in-lines)])
+        (cond [(regexp-match size-regexp line) => match->fraction]
+              [else #f])))))
+
 ;; compile-latex : path? -> void?
 (define (compile-latex file-base)
   (define tex-file (base+ext file-base ".tex"))
@@ -145,8 +217,8 @@
 
 ;; latex->latex-doc : string? -> string?
 (define (latex->latex-doc latex-str #:preamble [preamble (or (latex-preamble) "")])
-  (string-append "\\documentclass{article}\n"
-                 "\\usepackage[active,tightpage,textmath,pdftex]{preview}\n"
+  (string-append "\\documentclass{standalone}\n"
+                 "\\usepackage[active,tightpage,textmath,lyx,pdftex]{preview}\n"
                  ;; Note (16-feb-2016):
                  ;;   The above line does not work for be in TeXLive 2015 (OS X).
                  ;;   The pdftex option to the preview package were meant
@@ -164,16 +236,30 @@
                  (~a latex-str "\n")
                  "\\end{document}\n"))
 
-(define (latex->pict latex-str #:preamble [preamble (or (latex-preamble) "")])
+(define last-extracted-baseline-fraction #f)
+(define (latex->pict latex-str
+                     #:extract-baseline-fraction? [extract? #f]
+                     #:preamble [preamble (or (latex-preamble) "")])
   (define doc-str (latex->latex-doc latex-str #:preamble preamble))
   (define file-base (latex-doc->file-base doc-str))
-  (define pdf-file (base+ext file-base ".pdf"))  
+  (define pdf-file (base+ext file-base ".pdf"))
+  (define log-file (base+ext file-base ".log"))
   (hash-ref!
    cached-picts file-base
    (λ () (parameterize ([current-directory  (cache-path)])
            (ensure-pdf file-base doc-str)
-           (when (latex-debug?) (printf "INFO: loading ~a~nfolder: ~a~n" pdf-file (cache-path)))
-           (page->pict (pdf-page (open-pdf pdf-file) 0))))))
+           (when (latex-debug?)
+             (printf "INFO: loading ~a~nfolder: ~a~n" pdf-file (cache-path)))
+           (define p (page->pict (pdf-page (open-pdf pdf-file) 0)))
+           (define f (and extract?
+                          (file-exists? log-file)
+                          (extract-sizes-from-latex-log file-base)))
+           (set! last-extracted-baseline-fraction f)
+           (displayln (list 'f f))
+           (when f ; adjust the baseline
+             (displayln "lifting!")
+             (set! p (lift-above-baseline p (* (- f 1) (pict-height p)))))
+           p))))
 
 ;; latex->bitmap : string? -> bitmap%
 (define (latex->bitmap latex-str #:preamble [preamble (or (latex-preamble) "")])
@@ -189,6 +275,7 @@
   (cache-path cpath))
 
 (define (tidy-latex-cache)
+  ; (set! cached-picts (make-hash))
   (for ([file  (directory-list (cache-path))])
     (when (and (regexp-match #rx"^latex2pdf-" (path->string file))
                (not (hash-has-key? used-files file)))
