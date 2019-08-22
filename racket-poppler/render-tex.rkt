@@ -9,7 +9,7 @@
 
 ;; Goal: Be compatible with Neil&Jay's slideshow-latex
 
-;; Debug tips:
+;; Debugging tips:
 ;;   Open latest pdf with:
 ;;      ls -t *pdf | head -n1 | xargs open
 ;;   Rerun latest latex command with:
@@ -89,9 +89,9 @@
         [else  (build-path defaultdir name)]))
 
 ;; Default paths
-(define latex-path (make-parameter (find-executable  "pdflatex")))
+(define latex-path  (make-parameter (find-executable  "pdflatex")))
 (define dvipng-path (make-parameter (find-executable "dvipng")))
-(define cache-path (make-parameter (find-system-path 'temp-dir)))
+(define cache-path  (make-parameter (find-system-path 'temp-dir)))
 
 ;; Exceptions raised
 (struct exn:latex exn:fail (message))
@@ -159,8 +159,8 @@
     ; above and below the actual box there is a bit of space.
     ; the number from tightpage is added both above and below.
     (define tp 32891) ; "Preview: Tightpage -32891 -32891 32891 32891"
-    (displayln "Extract: ")
-    (displayln (~a 'h: h 'd: d 'w: w))
+    ;(displayln "Extract: ")
+    ;(displayln (~a 'h: h 'd: d 'w: w))
     ;(displayln (list h d w))  ; xxx
     (if (< (+ h d) 0.1)
         0.5                 ; the fallback is baseline at the middle
@@ -215,35 +215,78 @@
   
   (hash-set! used-files pdf-file #t))
 
+(define (brackets x)
+  (match x
+    ["" ""]
+    [(? string? x) (string-append "[" x "]")]
+    [_ (error 'brackets (~a "expected a string, got: " x))]))
+
+(define (format-options options format-option)
+  (brackets
+   (string-append*
+    (add-between (filter values (map format-option options))
+                 ","))))
+
+(define (format-document-class-options opts)
+  (define (format-option opt)
+    (match opt
+      [#f                    #f]
+      [(and (or 10 11 12) n) (~a n "pt")]
+      [(? integer? n)        (if (< n 10) "10pt" "12pt")]
+      [(? string? s)         s]
+      [(? symbol? s)         (~a s)]
+      [else                  (error 'format-document-class-option (~a "got: " opt))]))
+  (format-options opts format-option))
+
+(define (format-preview-options opts)
+  (define (format-option opt)
+    (match opt
+      [(? string? s)         s]
+      [(? symbol? s)         (~a s)]
+      [else                  (error 'format-preview-option (~a "got: " opt))]))
+  (format-options opts format-option))
+
 ;; latex->latex-doc : string? -> string?
-(define (latex->latex-doc latex-str #:preamble [preamble (or (latex-preamble) "")])
-  (string-append "\\documentclass{standalone}\n"
-                 "\\usepackage[active,tightpage,textmath,lyx,pdftex]{preview}\n"
-                 ;; Note (16-feb-2016):
-                 ;;   The above line does not work for be in TeXLive 2015 (OS X).
-                 ;;   The pdftex option to the preview package were meant
-                 ;;   to affect tightpage (according to documentation of preview)
-                 ;; ---
-                 ;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
-                 ;; This means use the "preview" packages with the options:
-                 ;;    active    - actually use preview (otherwise preview is ignored)
-                 ;;    tightpage - option is to be used with the option pdftex
-                 ;;    pdftex    - assume PDFTeX is the output driver (affects tightpage)
-                 "\\usepackage{amsmath}\n"   ; make amsmath available in math
-                 ; "\\pagestyle{empty}\n" 
-                 (~a preamble "\n")
+(define (latex->latex-doc
+         latex-str
+         #:preview-options        [preview-options '()]
+         #:document-class-options [doc-options     '()]
+         #:preamble               [preamble        (or (latex-preamble) #f)])  
+  (define doc-opts      (format-document-class-options doc-options))
+  (define preview-opts  (format-preview-options
+                         (append '(active tightpage lyx pdftex) preview-options)))
+  (define the-preamble  (or preamble "\\usepackage{amsmath}")) 
+  (string-append "\\documentclass" doc-opts     "{standalone}\n"
+                 "\\usepackage"    preview-opts "{preview}\n"
+                 (~a the-preamble "\n")
                  "\\begin{document}\n"
                  (~a latex-str "\n")
                  "\\end{document}\n"))
 
+;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
+;; This means use the "preview" packages with the options:
+;;    active    - actually use preview (otherwise preview is ignored)
+;;    tightpage - option is to be used with the option pdftex
+;;    pdftex    - assume PDFTeX is the output driver (affects tightpage)
+;; "\\usepackage{amsmath}\n"   ; make amsmath available in math
+
 (define last-extracted-baseline-fraction #f)
 (define (latex->pict latex-str
-                     #:extract-baseline-fraction? [extract? #f]
-                     #:preamble [preamble (or (latex-preamble) "")])
-  (define doc-str (latex->latex-doc latex-str #:preamble preamble))
+                     #:document-class-options     [doc-options     '()]
+                     #:preview-options            [preview-options '()]
+                     #:preamble                   preamble
+                     #:extract-baseline-fraction? [extract? #f])
+  ; Construct the LaTeX document
+  (define doc-str   (latex->latex-doc
+                     latex-str
+                     #:document-class-options     doc-options
+                     #:preview-options            preview-options
+                     #:preamble                   preamble))
+  ; Construct filenames for pdf and log
   (define file-base (latex-doc->file-base doc-str))
-  (define pdf-file (base+ext file-base ".pdf"))
-  (define log-file (base+ext file-base ".log"))
+  (define pdf-file  (base+ext file-base ".pdf"))
+  (define log-file  (base+ext file-base ".log"))
+  ; 
   (hash-ref!
    cached-picts file-base
    (λ () (parameterize ([current-directory  (cache-path)])
@@ -255,9 +298,9 @@
                           (file-exists? log-file)
                           (extract-sizes-from-latex-log file-base)))
            (set! last-extracted-baseline-fraction f)
-           (displayln (list 'f f))
+           ; (displayln (list 'f f))
            (when f ; adjust the baseline
-             (displayln "lifting!")
+             ; (displayln "lifting!")
              (set! p (lift-above-baseline p (* (- f 1) (pict-height p)))))
            p))))
 
