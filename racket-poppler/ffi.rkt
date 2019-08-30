@@ -408,7 +408,7 @@
      (send dc translate x y)
      (when (or (is-a? dc bitmap-dc%)
                (is-a? dc svg-dc%))
-       (define bm (send dc get-bitmap))
+       ; (define bm (send dc get-bitmap))
        (send dc in-cairo-context
              (λ (target-cr)
                (cairo_save target-cr)
