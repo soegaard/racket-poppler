@@ -407,7 +407,9 @@
      (define tr (send dc get-transformation))
      (send dc translate x y)
      (when (or (is-a? dc bitmap-dc%)
-               (is-a? dc svg-dc%))
+               (is-a? dc svg-dc%)
+               (is-a? dc pdf-dc%)
+               (is-a? dc post-script-dc%))
        ; (define bm (send dc get-bitmap))
        (send dc in-cairo-context
              (λ (target-cr)
