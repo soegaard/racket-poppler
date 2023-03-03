@@ -20,7 +20,6 @@
   [(macosx)
    ; order these to dependencies are loaded first
    (ffi-lib "libz.1.dylib")
-   ; (ffi-lib "libintl.8.dylib")
    (ffi-lib "libintl.9.dylib")
    (ffi-lib "libpng16.16.dylib")
    (ffi-lib "libexpat.1.dylib")
@@ -35,7 +34,7 @@
   [(windows)
    ; order these to dependencies are loaded first
    (ffi-lib "zlib1.dll")
-   (ffi-lib "libintl-8.dll")
+   (ffi-lib "libintl-9.dll")
    (ffi-lib "libpng16-16.dll")
    (ffi-lib "libexpat-1.dll")
    (ffi-lib "libfreetype-6.dll")
