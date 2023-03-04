@@ -15,7 +15,7 @@
 (provide (all-defined-out))
 
 (define-runtime-lib poppler-lib
-  [(unix) 
+  [(unix)
    (ffi-lib "libpoppler-glib" '("8" ""))]
   [(macosx)
    ; order these to dependencies are loaded first
@@ -53,7 +53,6 @@
 ;;;
 
 ;; Docs: https://developer.gnome.org/glib/2.30/glib-Doubly-Linked-Lists.html
-
 
 
 (define-cstruct _GList  ; double linked list links,
@@ -120,7 +119,7 @@
   #:wrap (allocator g_object_unref))
 
 ; pdf-file? (or path string) -> boolean
-(define (pdf-file? path)  
+(define (pdf-file? path)
   (and (file-exists? path)
        (bytes=? (filename-extension path) #"pdf")))
 
@@ -138,7 +137,7 @@
 ; pdf-count-pages : document -> integer
 ;   return the number of pages in the document
 (define-poppler pdf-count-pages
-  (_fun (doc) :: 
+  (_fun (doc) ::
         [doc-ptr : _PopplerDocumentPointer = (pdf-pointer doc)]
         -> _int)
   #:c-id poppler_document_get_n_pages)
@@ -187,7 +186,7 @@
 ; page-size : page -> (list number number)
 ;   return list of width and height of the page,
 ;   the unit of measurement is points
-(define-poppler page-size 
+(define-poppler page-size
   (_fun (p) ::
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [width  : (_ptr o _double)]
@@ -200,7 +199,7 @@
 (define (page-width p)  (first  (page-size p)))
 
 ; page-crop-box : page -> rectangle?
-(define-poppler page-crop-box ; 
+(define-poppler page-crop-box ;
   (_fun (p) ::
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [r : (_ptr o _PopplerRectangle)]
@@ -238,7 +237,7 @@
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [text : _string]         ; string utf8 encoded
         -> [grs : _GList*/null]  ; A GList of PopplerRectangle
-        ; poppler returns "PDF coordinates", 
+        ; poppler returns "PDF coordinates",
         ; giving grectangles->list a height flips them.
         -> (glist-of-rectangles->list-of-lists grs (page-height p)))
   #:wrap (allocator glistfreefull)
@@ -253,7 +252,7 @@
         [rs : (_ptr o _pointer)] ; PopplerRectangle  **rs
         [n  : (_ptr o _uint)]    ; guint n                 (number of rectangles)
         -> [rglist : _bool]      ; true if page contains text, false otherwise
-        -> (let () (define prs (map PopplerRectangle->list 
+        -> (let () (define prs (map PopplerRectangle->list
                                     (cblock->list rs _PopplerRectangle n)))
              ; only call g_free, if there are rectangles to free
              (unless (empty? prs) (g_free rs))
@@ -262,7 +261,7 @@
 
 ; page-text-with-layout : page -> (listof string? rectangle?)
 (define (page-text-with-layout p)
-  ; TODO: why not combine page-text and page-text-layout? 
+  ; TODO: why not combine page-text and page-text-layout?
   (define page (page-pointer p)) ; open page once only
   (for/list ([box (page-text-layout page)])
     (define text (apply page-text-in-rect page 'glyph box))
@@ -311,7 +310,7 @@
 
 ;;;
 ;;; GLists of Poppler Rectangles
-;;; 
+;;;
 
 ; Functions such as poppler_page_get_text_layout return a GList of PopplerRectangles.
 ; We need a conversion to Racket lists of Racket rectangles.
@@ -377,7 +376,7 @@
   (begin
     (start-atomic)
     (let ([cr cr])  ; [cr (get-cr)]
-      (if cr 
+      (if cr
           (begin0
             (begin . body)
             ; (release-cr cr) ; corresponded to (get-cr)
@@ -390,10 +389,10 @@
   (call-as-atomic
    (lambda ()
      (let ([cr cr])
-       (if cr 
+       (if cr
            (dynamic-wind
             void
-            (lambda () . body) 
+            (lambda () . body)
             (lambda () (release-cr cr)))
            default)))))
 
@@ -401,7 +400,7 @@
   (match-define (list w h) (page-size p)) ; in points
   ; (define α 1.0) ; TODO: What is the correct factor here? TODO : it seems this factor is ignored?!?
   (define-values (width height) (values (* α w) (* α h))) ; convert from point to pixels
-  (dc 
+  (dc
    (λ(dc x y)
      (define tr (send dc get-transformation))
      (send dc translate x y)
@@ -415,7 +414,7 @@
                (cairo_save target-cr)
                (cairo_scale target-cr α α)
                (page-render-for-printing-with-options-to-cairo! p target-cr options)
-               (cairo_restore target-cr))))     
+               (cairo_restore target-cr))))
      (send dc set-transformation tr))
    width height))
 
@@ -434,7 +433,7 @@
         (cairo_restore recorded-cairo)
         recorded-surface)
     #;(define recorded-surface (and use-recording? (make-recording)))
-    (dc 
+    (dc
      (λ(dc x y)
        #;(displayln (~a "redrawing at " x "," y))
        (define tr (send dc get-transformation))
@@ -446,7 +445,7 @@
                (λ (target-cr)
                  (cairo_save target-cr)
                  (cairo_scale target-cr α α)
-                 (cond 
+                 (cond
                    #;[use-recording?
                       (cairo_set_operator target-cr CAIRO_OPERATOR_DEST_OVER)
                       (cairo_set_source_surface target-cr recorded-surface 0 0)
@@ -466,7 +465,7 @@
                    (cairo_set_source_surface target-cr recorded-surface 0 0)
                    (cairo_paint target-cr)
                    (cairo_restore target-cr)
-                   
+
                    ;(cairo_set_line_width target-cr 1.0)
                    ;(cairo_set_source_rgb target-cr 1.0 0.0 0.5)
                    ;(cairo_move_to target-cr 0.0 0.0)

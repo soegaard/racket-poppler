@@ -58,7 +58,7 @@
 
 (provide latex->pict latex->bitmap
          latex-preamble add-preamble latex-debug?
-         latex-path 
+         latex-path
          (struct-out exn:latex)
          set-latex-cache-path
          tidy-latex-cache
@@ -122,7 +122,7 @@
 (define (parse-latex-log base-file)
   (define error-regexp
     (regexp (format ".*~a.*:[0-9]+:" (path->string base-file))))
-  
+
   (let loop ([lines  (text-file->string-list (base+ext base-file ".log"))])
     (cond [(empty? lines)  "unknown"]
           [(regexp-match error-regexp (first lines))
@@ -181,14 +181,14 @@
   (define latex-args
     (list "-interaction=batchmode" "-file-line-error" "-halt-on-error"
           (path->string tex-file)))
-  
+
   (define pdflatex-args
     (list "-interaction=batchmode" "-file-line-error" "-halt-on-error"
           (path->string tex-file)))
-   
+
   (when (latex-debug?)
     (printf "INFO: ~a ~a~n" (latex-path) (string-join latex-args " ")))
-  
+
   (when (not (zero? (parameterize ([current-output-port (open-output-nowhere)])
                       (apply system*/exit-code (latex-path) latex-args))))
     (when (latex-debug?)
@@ -207,12 +207,12 @@
 (define (ensure-pdf file-base doc-str)
   (define tex-file (base+ext file-base ".tex"))
   (define pdf-file (base+ext file-base ".pdf"))
-  
+
   (unless (file-exists? pdf-file)
     (when (latex-debug?) (printf "INFO: generating ~a~n" pdf-file))
     (string->text-file doc-str tex-file)
     (compile-latex file-base))
-  
+
   (hash-set! used-files pdf-file #t))
 
 (define (brackets x)
@@ -251,11 +251,11 @@
          latex-str
          #:preview-options        [preview-options '()]
          #:document-class-options [doc-options     '()]
-         #:preamble               [preamble        (or (latex-preamble) #f)])  
+         #:preamble               [preamble        (or (latex-preamble) #f)])
   (define doc-opts      (format-document-class-options doc-options))
   (define preview-opts  (format-preview-options
                          (append '(active tightpage lyx pdftex) preview-options)))
-  (define the-preamble  (or preamble "\\usepackage{amsmath}")) 
+  (define the-preamble  (or preamble "\\usepackage{amsmath}"))
   (string-append "\\documentclass" doc-opts     "{standalone}\n"
                  "\\usepackage"    preview-opts "{preview}\n"
                  (~a the-preamble "\n")
@@ -286,7 +286,7 @@
   (define file-base (latex-doc->file-base doc-str))
   (define pdf-file  (base+ext file-base ".pdf"))
   (define log-file  (base+ext file-base ".log"))
-  ; 
+  ;
   (hash-ref!
    cached-picts file-base
    (λ () (parameterize ([current-directory  (cache-path)])

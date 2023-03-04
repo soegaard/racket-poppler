@@ -38,7 +38,7 @@
  [page-render-to-dc! (page? (is-a?/c dc<%>) . -> . any/c)]
  [page->pict   (page? . -> . pict?)]
  [page->bitmap (page? . -> . (is-a?/c bitmap%))]
- 
+
  [pdf-title    (pdf? . -> . (or/c false? string?))]
  [pdf-author   (pdf? . -> . (or/c false? string?))]
  [pdf-subject  (pdf? . -> . (or/c false? string?))]
@@ -46,5 +46,3 @@
  [pdf-creator  (pdf? . -> . (or/c false? string?))]
  [pdf-producer (pdf? . -> . (or/c false? string?))]
  [page-label   (page? . -> . (or/c false? string?))])
-
-

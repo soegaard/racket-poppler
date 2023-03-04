@@ -9,4 +9,3 @@
 ; (define scribblings '(("doc/main.scrbl" ())))
 (define release-notes '((p "Initial release")))
 (define omit-compile-paths '("racket-poppler/examples/" "examples/"))
-

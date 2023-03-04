@@ -15,15 +15,15 @@ The license of Poppler is GPL.
 
 In order for the rendering to work the Poppler library needs
 to be compiled to use the same version of Cairo as Racket uses.
-For that reason racket-poppler is distributed with Poppler 
-precompiled for Windows and OS X. Thanks to Matthew Flatt for 
+For that reason racket-poppler is distributed with Poppler
+precompiled for Windows and OS X. Thanks to Matthew Flatt for
 providing the binaries. The license of Poppler is GPL,
 so it can't be distributed with Racket.
 
 Note:  Use the development version of Racket - which uses a newer
        version of Cairo than the current release.
 
-The racket-poppler package is based on code by Michael Wilber 
+The racket-poppler package is based on code by Michael Wilber
 (https://github.com/gcr/pdf-render).
 
 Example (assumes latex is installed):
@@ -45,19 +45,19 @@ Now let's do something with the picture:
 
 ![nice picture in DrRacket](http://i.imgur.com/LT9j8cl.png)
 
-This renders the formula of Pythagoras as a pdf, converts it into 
+This renders the formula of Pythagoras as a pdf, converts it into
 a pict, which is then rotated. The rotated pict is converted into
 a bitmap, and finally DrRacket shows the bitmap.
 
-Note: DrRacket will currently not display the picts generated 
+Note: DrRacket will currently not display the picts generated
 by latex->pict or pdf->pict directly. Wrap the picts in
 pict->bitmap to see them in DrRacket. (The cause of this
 is fact that pdf->pict draws directly the Cairo drawing context.
-DrRacket "copies" picts using a record-dc% and recording 
+DrRacket "copies" picts using a record-dc% and recording
 contexts doesn't record drawing operations that draw directly
 to the Cairo context.)
 
-See Michael Wilber's original documentation for some ideas 
+See Michael Wilber's original documentation for some ideas
 on how to use this library, but note that the API has changed
 slightly. In racket-poppler all operations are safe.
 http://planet.racket-lang.org/package-source/gcr/pdf-render.plt/2/2/planet-docs/main/index.html
@@ -70,5 +70,3 @@ Warning: The documentation in doc/ has not been updated yet.
     https://github.com/soegaard/racket-osx-libs/tree/master/lib
 
 /soegaard
-
-

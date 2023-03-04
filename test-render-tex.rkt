@@ -7,10 +7,10 @@
 ; turn this on to see paths and errors.
 
 ; the location of pdflatex where TeXLive installed it
-(latex-path 
+(latex-path
  (case (system-type)
    [(macosx) "/usr/local/texlive/2013/bin/universal-darwin/pdflatex"]
-   [(unix)   "pdflatex"] 
+   [(unix)   "pdflatex"]
    [(windows) "c:/texlive/2014/bin/win32/pdflatex.exe"]))
 
 ; make a Racket pict from a piece of TeX
@@ -21,10 +21,10 @@
 (define beside hc-append)
 (define above  vc-append)
 
-(pict->bitmap  ; pict->bitmap is need in DrRacket 
+(pict->bitmap  ; pict->bitmap is need in DrRacket
  ;               DrRacket won't display picts that draw directly
  ;               to the Cairo drawing context
- 
+
  ; This shows that the pict can be used as a normal pict.
  (above (beside (rotate p (- pi (/ pi 3))) (rotate p    (/ pi 3)))
         (beside (rotate p (+ pi (/ pi 3))) (rotate p (- (/ pi 3))))))
