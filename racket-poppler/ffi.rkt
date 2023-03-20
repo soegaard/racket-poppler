@@ -35,8 +35,7 @@
   [(windows)
    ; order these so dependencies are loaded first
    (ffi-lib "zlib1.dll")
-   (or (ffi-lib "libintl-9.dll" #:fail (λ () #f))
-       (ffi-lib "libintl-8.dll"))
+   (ffi-lib "libintl-9.dll")
    (ffi-lib "libpng16-16.dll")
    (ffi-lib "libexpat-1.dll")
    (ffi-lib "libfreetype-6.dll")
