@@ -18,7 +18,7 @@
   [(unix) 
    (ffi-lib "libpoppler-glib" '("8" ""))]
   [(macosx)
-   ; order these to dependencies are loaded first
+   ; order these so dependencies are loaded first
    (ffi-lib "libz.1.dylib")
    ; (ffi-lib "libintl.8.dylib")
    (ffi-lib "libintl.9.dylib")
@@ -33,9 +33,10 @@
    (ffi-lib "libgio-2.0.0.dylib")
    (ffi-lib "libpoppler-glib.8.dylib")]
   [(windows)
-   ; order these to dependencies are loaded first
+   ; order these so dependencies are loaded first
    (ffi-lib "zlib1.dll")
-   (ffi-lib "libintl-8.dll")
+   (or (ffi-lib "libintl-9.dll" #:fail (λ () #f))
+       (ffi-lib "libintl-8.dll"))
    (ffi-lib "libpng16-16.dll")
    (ffi-lib "libexpat-1.dll")
    (ffi-lib "libfreetype-6.dll")
