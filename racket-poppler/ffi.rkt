@@ -149,7 +149,6 @@
     [(_ id ffi-id)
      #'(define-poppler id
          (_fun (doc) ::  [doc-ptr : _PopplerDocumentPointer = (pdf-pointer doc)] -> _string)
-         #:wrap (allocator g_free)
          #:c-id ffi-id)]))
 
 (define-info-getter pdf-title    poppler_document_get_title)
@@ -220,7 +219,7 @@
         [style : _SelectionStyles]
         [rect : (_ptr i _PopplerRectangle) = (make-PopplerRectangle x1 y1 x2 y2)]
         -> _string)
-  #:wrap (allocator g_free)
+  ; #:wrap (allocator g_free)
   #:c-id poppler_page_get_selected_text)
 
 ; page-text : page -> string
@@ -228,7 +227,7 @@
 (define-poppler page-text
   (_fun (p) :: [page-ptr : _PopplerPagePointer = (page-pointer p)]
         -> _string)
-  #:wrap (allocator g_free)
+  ; #:wrap (allocator g_free)
   #:c-id poppler_page_get_text)
 
 ; page-find-text : page string -> (listof retangle?)
