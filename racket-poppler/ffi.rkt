@@ -233,18 +233,47 @@
 ; page-find-text : page string -> (listof retangle?)
 ;   findes text on the page (using default options),
 ;   the result is a list of rectangles for each occurance of the text
-(define-poppler page-find-text
+#;(define-poppler page-find-text
   (_fun (p text) ::
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [text : _string]         ; string utf8 encoded
         -> [grs : _GList*/null]  ; A GList of PopplerRectangle
         ; poppler returns "PDF coordinates", 
         ; giving grectangles->list a height flips them.
-        -> (begin0 
+        -> (glist-of-rectangles->list-of-lists grs (page-height p)))
+  #:wrap (allocator glistfreefull)
+  #:c-id poppler_page_find_text)
+
+
+(define-poppler raw-page-find-text
+  (_fun (p text) ::
+        [page-ptr : _PopplerPagePointer = (page-pointer p)]
+        [text : _string]         ; string utf8 encoded
+        -> [grs : _GList*/null])  ; A GList of PopplerRectangle
+        ; poppler returns "PDF coordinates", 
+        ; giving grectangles->list a height flips them.
+  #:wrap (allocator glistfreefull)
+  #:c-id poppler_page_find_text)
+
+(define (page-find-text p text)
+  (define grs (raw-page-find-text p text))
+  (glist-of-rectangles->list-of-lists grs (page-height p)))
+
+  
+#;(define-poppler page-find-text
+  (_fun (p text) ::
+        [page-ptr : _PopplerPagePointer = (page-pointer p)]
+        [text : _string]         ; string utf8 encoded
+        -> [grs : _GList*/null]  ; A GList of PopplerRectangle
+        ; poppler returns "PDF coordinates", 
+        ; giving grectangles->list a height flips them.
+        -> #;(glist-of-rectangles->list-of-lists grs (page-height p))
+        (begin0 
              (glist-of-rectangles->list-of-lists grs (page-height p))
              (glistfreefull grs)))
   ; #:wrap (allocator glistfreefull)
   #:c-id poppler_page_find_text)
+
 
 ; page-text-layout : page -> (listof rectangles?)
 ;   Return a list of rectangles. Each rectangle
