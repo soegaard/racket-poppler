@@ -240,8 +240,10 @@
         -> [grs : _GList*/null]  ; A GList of PopplerRectangle
         ; poppler returns "PDF coordinates", 
         ; giving grectangles->list a height flips them.
-        -> (glist-of-rectangles->list-of-lists grs (page-height p)))
-  #:wrap (allocator glistfreefull)
+        -> (begin0 
+             (glist-of-rectangles->list-of-lists grs (page-height p))
+             (glistfreefull grs)))
+  ; #:wrap (allocator glistfreefull)
   #:c-id poppler_page_find_text)
 
 ; page-text-layout : page -> (listof rectangles?)
