@@ -55,8 +55,6 @@
 
 ;; Docs: https://developer.gnome.org/glib/2.30/glib-Doubly-Linked-Lists.html
 
-
-
 (define-cstruct _GList  ; double linked list links,
   ([data _pointer]      ; pointing to data
    [next _GList-pointer/null]
@@ -80,9 +78,11 @@
 ; g_list_free frees the links of the list (the datas are not freed)
 (define-glib g_list_free (_fun _GList* -> _void))
 (define (glistfree g*) (and g* (g_list_free g*)))
-; g_list_free frees both the links of the list and the datas
-(define-glib g_list_free_full (_fun _GList* -> _void))
-(define (glistfreefull g*) (and g* (g_list_free_full g*)))
+
+; g_list_free_full frees both the links of the list and the datas
+(define-glib g_list_free_full (_fun _GList* (_fun _pointer -> _void) -> _void))
+; `free` could be `poppler_rectangle_free`
+(define (glistfreefull g* free) (and g* (g_list_free_full g* free)))
 
 ; glist->list : GList*/null -> list
 ;   return a list with the elements of the glist,
@@ -124,6 +124,8 @@
 (define (pdf-file? path)  
   (and (file-exists? path)
        (bytes=? (filename-extension path) #"pdf")))
+
+
 
 ; open-pdf : path-or-string [(or string #f)] -> (or document #f)
 ;   if p is the (relative or full) path of a pdf-file, open it
@@ -232,20 +234,8 @@
 
 ; page-find-text : page string -> (listof retangle?)
 ;   findes text on the page (using default options),
-;   the result is a list of rectangles for each occurance of the text
-#;(define-poppler page-find-text
-  (_fun (p text) ::
-        [page-ptr : _PopplerPagePointer = (page-pointer p)]
-        [text : _string]         ; string utf8 encoded
-        -> [grs : _GList*/null]  ; A GList of PopplerRectangle
-        ; poppler returns "PDF coordinates", 
-        ; giving grectangles->list a height flips them.
-        -> (glist-of-rectangles->list-of-lists grs (page-height p)))
-  #:wrap (allocator glistfreefull)
-  #:c-id poppler_page_find_text)
-
-
-(define-poppler raw-page-find-text
+;   the result is a list of rectangles for each occurence of the text
+#;(define-poppler raw-page-find-text
   (_fun (p text) ::
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [text : _string]         ; string utf8 encoded
@@ -255,23 +245,20 @@
   #:wrap (allocator glistfreefull)
   #:c-id poppler_page_find_text)
 
-(define (page-find-text p text)
+#;(define (page-find-text p text)
   (define grs (raw-page-find-text p text))
   (glist-of-rectangles->list-of-lists grs (page-height p)))
 
-  
-#;(define-poppler page-find-text
+(define-poppler page-find-text
   (_fun (p text) ::
         [page-ptr : _PopplerPagePointer = (page-pointer p)]
         [text : _string]         ; string utf8 encoded
         -> [grs : _GList*/null]  ; A GList of PopplerRectangle
-        ; poppler returns "PDF coordinates", 
-        ; giving grectangles->list a height flips them.
-        -> #;(glist-of-rectangles->list-of-lists grs (page-height p))
-        (begin0 
-             (glist-of-rectangles->list-of-lists grs (page-height p))
-             (glistfreefull grs)))
-  ; #:wrap (allocator glistfreefull)
+        -> (begin0
+               ; poppler returns "PDF coordinates", 
+               ; giving grectangles->list a height flips them.
+               (glist-of-rectangles->list-of-lists grs (page-height p))
+             (glistfreefull grs poppler-rectangle-free)))
   #:c-id poppler_page_find_text)
 
 
@@ -321,6 +308,11 @@
 ; (x1,y1) is lower left corner. (x2,y2) is upper right corner
 ; The coordinate system is a standard xy-coordinate system. The units are points.
 
+(define-poppler poppler-rectangle-free
+  (_fun _pointer -> _void)
+  #:c-id poppler_rectangle_free)
+
+
 ; In Racket the rectangle will be represented as a list: (list x1 y1 x2 y2).
 (define rectangle?
   (list/c (and/c real? (not/c negative?)) (and/c real? (not/c negative?))
@@ -351,8 +343,14 @@
 ;   Converts a GList of PopperRectangles to a (Racket) list.
 ;   Both the GList and the rectangles are freed.
 (define (glist-of-rectangles->list-of-lists grs [height #f])
-  (for/list ([r (in-list (glist->list grs))])
-    (rectangle->list (cast r _pointer _PopplerRectangle-pointer) height)))
+  ; keep grs alive
+  (let ([grs grs])
+    (define result
+      (for/list ([r (in-list (glist->list grs))])
+        (rectangle->list (cast r _pointer _PopplerRectangle-pointer) height)))
+    (if grs
+        result
+        '())))
 
 ;;;
 ;;; Rendering
@@ -374,9 +372,9 @@
 
 (define _PopplerPrintFlags
   (_enum '(POPPLER_PRINT_DOCUMENT          = 0
-                                           POPPLER_PRINT_MARKUP_ANNOTS     = 1
-                                           POPPLER_PRINT_STAMP_ANNOTS_ONLY = 2
-                                           POPPLER_PRINT_ALL               = 1)))
+           POPPLER_PRINT_MARKUP_ANNOTS     = 1
+           POPPLER_PRINT_STAMP_ANNOTS_ONLY = 2
+           POPPLER_PRINT_ALL               = 1)))
 
 (define-poppler page-render-for-printing-with-options-to-cairo!
   (_fun (p cairo-context options) ::

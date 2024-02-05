@@ -55,7 +55,7 @@ p
 
 
 (pict->bitmap
- (for/fold ([pageview (apply blank (page-size p))])
+ (for/fold ([pageview (page->pict p)])
    ([box (in-list (page-text-layout p))])
    (match-define (list x1 y1 x2 y2) box)
    pageview
@@ -66,7 +66,7 @@ p
 
 ;; ;; Overlay each box over the PDF.
 (pict->bitmap
- (for/fold ([pageview (scale (page->pict p) 0.5)])
+ (for/fold ([pageview (page->pict p)])
    ([bounding-box (in-list (page-find-text p "the"))])
    (match-define (list x1 y1 x2 y2) bounding-box)
    ;; Each match's bounding box ^
