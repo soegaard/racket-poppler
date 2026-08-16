@@ -5,10 +5,10 @@
                "slideshow-lib"
                "web-server-lib"
                "base" "pict"
-               ("poppler-x86-64-macosx" #:platform "x86_64-macosx")
-               ("poppler-i386-macosx"   #:platform "i386-macosx")
-               ("poppler-win32-x86-64"  #:platform "win32\\x86_64")
-               ("poppler-win32-i386"    #:platform "win32\\i386")))
+               ("poppler-aarch64-macosx-2" #:platform "aarch64-macosx")
+               ("poppler-x86_64-macosx-2"  #:platform "x86_64-macosx")
+               ("poppler-win32-arm64-2"    #:platform "win32\\arm64")
+               ("poppler-win32-x86_64-2"   #:platform "win32\\x86_64")))
 
 (define build-deps '("at-exp-lib" "rackunit-lib" "scribble-lib"
                      "racket-doc" "draw-doc" "pict-doc"))
