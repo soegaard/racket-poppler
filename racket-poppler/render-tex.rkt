@@ -70,7 +70,7 @@
 
 
 ;; Document contents
-(define latex-preamble (make-parameter ""))
+(define latex-preamble (make-parameter "\\usepackage{amsmath}"))
 
 (define (add-preamble . latex-strs)
   (latex-preamble (string-join (cons (latex-preamble) latex-strs) "\n")))
@@ -125,6 +125,8 @@
   
   (let loop ([lines  (text-file->string-list (base+ext base-file ".log"))])
     (cond [(empty? lines)  "unknown"]
+          [(regexp-match? #rx"No pages of output[.]" (first lines))
+           (first lines)]
           [(regexp-match error-regexp (first lines))
            (let* ([info  (regexp-split #rx":" (first lines))]
                   [msg  (string-join (drop info 2) ":")]
@@ -177,6 +179,7 @@
 (define (compile-latex file-base)
   (define tex-file (base+ext file-base ".tex"))
   (define pdf-file (base+ext file-base ".pdf"))
+  (define log-file (base+ext file-base ".log"))
 
   (define latex-args
     (list "-interaction=batchmode" "-file-line-error" "-halt-on-error"
@@ -193,9 +196,19 @@
                       (apply system*/exit-code (latex-path) latex-args))))
     (when (latex-debug?)
       (printf "ERROR: latex error, here's the log:~n")
-      (printf "~a~n" (text-file->string (base+ext file-base ".log"))))
+      (printf "~a~n" (text-file->string log-file)))
     (raise (exn:latex "latex failed" (current-continuation-marks)
-                      (parse-latex-log file-base)))))
+                      (parse-latex-log file-base))))
+  (unless (file-exists? pdf-file)
+    (when (latex-debug?)
+      (printf "ERROR: latex did not create ~a, here's the log:~n" pdf-file)
+      (when (file-exists? log-file)
+        (printf "~a~n" (text-file->string log-file))))
+    (raise (exn:latex "latex did not create a PDF"
+                      (current-continuation-marks)
+                      (if (file-exists? log-file)
+                          (parse-latex-log file-base)
+                          "no log file")))))
 
 ;; latex-doc->file-base : string? -> string?
 (define (latex-doc->file-base doc-str)
@@ -251,16 +264,18 @@
          latex-str
          #:preview-options        [preview-options '()]
          #:document-class-options [doc-options     '()]
-         #:preamble               [preamble        (or (latex-preamble) #f)])  
+         #:preamble               [preamble        (latex-preamble)])
   (define doc-opts      (format-document-class-options doc-options))
   (define preview-opts  (format-preview-options
                          (append '(active tightpage lyx pdftex) preview-options)))
-  (define the-preamble  (or preamble "\\usepackage{amsmath}")) 
+  (define the-preamble  (or preamble ""))
   (string-append "\\documentclass" doc-opts     "{standalone}\n"
                  "\\usepackage"    preview-opts "{preview}\n"
                  (~a the-preamble "\n")
                  "\\begin{document}\n"
+                 "\\begin{preview}\n"
                  (~a latex-str "\n")
+                 "\\end{preview}\n"
                  "\\end{document}\n"))
 
 ;; "\\usepackage[active,tightpage,pdftex]{preview}\n"
@@ -274,7 +289,7 @@
 (define (latex->pict latex-str
                      #:document-class-options     [doc-options     '()]
                      #:preview-options            [preview-options '()]
-                     #:preamble                   preamble
+                     #:preamble                   [preamble        (latex-preamble)]
                      #:extract-baseline-fraction? [extract? #f])
   ; Construct the LaTeX document
   (define doc-str   (latex->latex-doc
@@ -293,7 +308,17 @@
            (ensure-pdf file-base doc-str)
            (when (latex-debug?)
              (printf "INFO: loading ~a~nfolder: ~a~n" pdf-file (cache-path)))
-           (define p (page->pict (pdf-page (open-pdf pdf-file) 0)))
+           (define doc (open-pdf pdf-file))
+           (unless doc
+             (raise (exn:latex "poppler failed to open generated PDF"
+                               (current-continuation-marks)
+                               (format "file: ~a" (path->complete-path pdf-file)))))
+           (define page (pdf-page doc 0))
+           (unless page
+             (raise (exn:latex "generated PDF has no first page"
+                               (current-continuation-marks)
+                               (format "file: ~a" (path->complete-path pdf-file)))))
+           (define p (page->pict page))
            (define f (and extract?
                           (file-exists? log-file)
                           (extract-sizes-from-latex-log file-base)))
@@ -305,7 +330,7 @@
            p))))
 
 ;; latex->bitmap : string? -> bitmap%
-(define (latex->bitmap latex-str #:preamble [preamble (or (latex-preamble) "")])
+(define (latex->bitmap latex-str #:preamble [preamble (latex-preamble)])
   (pict->bitmap (latex->pict latex-str #:preamble preamble)))
 
 

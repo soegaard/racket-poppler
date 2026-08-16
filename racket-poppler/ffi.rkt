@@ -122,20 +122,23 @@
 ; pdf-file? (or path string) -> boolean
 (define (pdf-file? path)  
   (and (file-exists? path)
-       (bytes=? (filename-extension path) #"pdf")))
+       (let ([ext (filename-extension path)])
+         (and ext (bytes-ci=? ext #"pdf")))))
 
 
 
 ; open-pdf : path-or-string [(or string #f)] -> (or document #f)
 ;   if p is the (relative or full) path of a pdf-file, open it
 (define (open-pdf p [password #f])
-  (and (pdf-file? p)
-       (let ([p (cond [(complete-path? p) p]
-                      [(relative-path? p) (path->complete-path p)]
-                      [(string? p)        (open-pdf (string->path p) password)]
-                      [else               (error 'open-pdf "internal error")])])
-         (define pointer (unsafe-pdf-from-file (g_filename_to_uri (path->string p) #f #f) password))
-         (cond [pointer => pdf] [else #f]))))
+  (cond [(string? p) (open-pdf (string->path p) password)]
+        [(pdf-file? p)
+         (let ([p (cond [(complete-path? p) p]
+                        [(relative-path? p) (path->complete-path p)]
+                        [else               (error 'open-pdf "internal error")])])
+           (define uri (g_filename_to_uri (path->string p) #f #f))
+           (define pointer (and uri (unsafe-pdf-from-file uri password)))
+           (cond [pointer => pdf] [else #f]))]
+        [else #f]))
 
 ; pdf-count-pages : document -> integer
 ;   return the number of pages in the document
